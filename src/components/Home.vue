@@ -10,7 +10,7 @@
                 <van-search></van-search>
             </div>
         </div>
-        <div class="main-group">
+        <div class="main-group" ref="main" :style="mainHeightStyle">
             <div>
                 <h2>推荐商家</h2>
                 <van-dropdown-menu>
@@ -20,71 +20,11 @@
                     <div class="van-dropdown-menu__item">筛选<i class="iconfont icon-funnel"></i></div>
                 </van-dropdown-menu>
                 <div class="merchant-list">
-                    <router-link to="/merchant/1">
+                    <router-link :to="'/merchant/'+merchant.id" v-for="merchant in merchants" :key="merchant.id+merchant.name">
                         <div class="merchant-item">
-                            <img src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3249244908,1733608492&fm=26&gp=0.jpg" alt="" class="logo">
+                            <img :src="merchant.logo" alt="" class="logo">
                             <div class="merchant-info">
-                                <div class="merchant-name">全榜第一黑店</div>
-                                <div class="rate-group">
-                                    <van-rate size="12" v-model="rate"></van-rate>
-                                </div>
-                                <div class="tag-group">
-                                    <van-tag plain>美团专送</van-tag>
-                                    <van-tag plain>家常菜</van-tag>
-                                </div>
-                            </div>
-                        </div>
-                    </router-link>
-                    <router-link to="/merchant/1">
-                        <div class="merchant-item">
-                            <img src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3249244908,1733608492&fm=26&gp=0.jpg" alt="" class="logo">
-                            <div class="merchant-info">
-                                <div class="merchant-name">瞎几把剪理发店</div>
-                                <div class="rate-group">
-                                    <van-rate size="12" v-model="rate"></van-rate>
-                                </div>
-                                <div class="tag-group">
-                                    <van-tag plain>美团专送</van-tag>
-                                    <van-tag plain>家常菜</van-tag>
-                                </div>
-                            </div>
-                        </div>
-                    </router-link>
-                    <router-link to="/merchant/1">
-                        <div class="merchant-item">
-                            <img src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3249244908,1733608492&fm=26&gp=0.jpg" alt="" class="logo">
-                            <div class="merchant-info">
-                                <div class="merchant-name">我很闲因为我很快乐</div>
-                                <div class="rate-group">
-                                    <van-rate size="12" v-model="rate"></van-rate>
-                                </div>
-                                <div class="tag-group">
-                                    <van-tag plain>美团专送</van-tag>
-                                    <van-tag plain>家常菜</van-tag>
-                                </div>
-                            </div>
-                        </div>
-                    </router-link>
-                    <router-link to="/merchant/1">
-                        <div class="merchant-item">
-                            <img src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3249244908,1733608492&fm=26&gp=0.jpg" alt="" class="logo">
-                            <div class="merchant-info">
-                                <div class="merchant-name">这条街就我没倒闭</div>
-                                <div class="rate-group">
-                                    <van-rate size="12" v-model="rate"></van-rate>
-                                </div>
-                                <div class="tag-group">
-                                    <van-tag plain>美团专送</van-tag>
-                                    <van-tag plain>家常菜</van-tag>
-                                </div>
-                            </div>
-                        </div>
-                    </router-link>
-                    <router-link to="/merchant/1">
-                        <div class="merchant-item">
-                            <img src="https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3249244908,1733608492&fm=26&gp=0.jpg" alt="" class="logo">
-                            <div class="merchant-info">
-                                <div class="merchant-name">理想很完美现实很骨感</div>
+                                <div class="merchant-name">{{merchant.name}}</div>
                                 <div class="rate-group">
                                     <van-rate size="12" v-model="rate"></van-rate>
                                 </div>
@@ -102,7 +42,8 @@
 </template>
 
 <script>
-    import {Search, DropdownMenu, DropdownItem, Rate, Tag} from 'vant';
+    import {DropdownItem, DropdownMenu, Rate, Search, Tag} from 'vant';
+    import BSColl from 'better-scroll';
 
     export default {
         name: "Home",
@@ -110,6 +51,9 @@
             return {
                 rate: 8,
                 sort: 0,
+                merchants: [],
+                scroll: null,
+                page: 1,
                 sorts: [
                     {text: '推荐排序', value: 0},
                     {text: '好评优先', value: 1},
@@ -124,6 +68,40 @@
             [DropdownItem.name]: DropdownItem,
             [Rate.name]: Rate,
             [Tag.name]: Tag
+        },
+        computed: {
+          mainHeightStyle(){
+              const leftHeight = 93 + 50;
+              const phoneHeight = 667;
+              const mainHeight = (phoneHeight - leftHeight)/37.5;
+              return {"height": mainHeight + "rem"}
+          }
+        },
+        mounted() {
+            this.scroll = new BSColl(this.$refs.main, {
+                scrollY: true,
+                pullUpLoad: {
+                    threshold: 0
+                }
+            });
+            this.scroll.on("pullingUp", () => {
+                this.getMerchants(this.page + 1);
+            });
+            this.getMerchants(1);
+        },
+        methods: {
+            getMerchants(page){
+                this.$http.getMerchants(1).then(res => {
+                    if(res.data && res.data.results && res.data.results.length > 0){
+                        console.log(res);
+                        this.page = page;
+                        const merchants = res.data.results;
+                        this.merchants = this.merchants.concat(merchants);
+                    }
+                    this.scroll.refresh();
+                    this.scroll.finishPullUp();
+                })
+            }
         }
     }
 </script>

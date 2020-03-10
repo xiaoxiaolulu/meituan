@@ -38,6 +38,11 @@ class Http {
         const url = "/login";
         return this.http.post(url,params)
     }
+
+    getMerchants(page){
+        const url = "/merchant?page=" + page;
+        return this.http.get(url)
+    }
 }
 
 export default new Http()
